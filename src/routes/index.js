@@ -1,6 +1,6 @@
 const express = require('express');
 const path = require('path');
-const pool = require('../db'); // Import the database connection
+const pool = require('../db/db'); // Import the database connection
 const router = express.Router();
 
 // Middleware to parse JSON request bodies
