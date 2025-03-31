@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Création d'un challenge</title>
+    <script>
+        function shuffle(tab) {
+            var i, j, tmp;
+            for (i = tab.length - 1; i > 0; i--) {
+                j = Math.floor(Math.random() * (i + 1));
+                tmp = tab[i];
+                tab[i] = tab[j];
+                tab[j] = tmp;
+            }
+            return tab;
+        }
+
+        async function searchPlayer(event) {
+            event.preventDefault();
+            const playerId = document.getElementById('player-id').value;
+            const membersTable = document.getElementById('members-table-body');
+
+            // Check if player already exists in the table
+            const existingPlayer = Array.from(membersTable.rows).some(row => row.cells[0].textContent === playerId);
+            if (existingPlayer) {
+                alert('Player already added');
+                return;
+            }
+
+            const response = await fetch(`/api/members/${playerId}`);
+            if (response.ok) {
+                const player = await response.json();
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${player.id}</td>
+                    <td>${player.firstname}</td>
+                    <td>${player.lastname}</td>
+                    <td>${player.gender}</td>
+                    <td>${player.age}</td>
+                    <td><button onclick="deleteRow(this)">Supprimer</button></td>
+                `;
+                membersTable.appendChild(row);
+                document.getElementById('total-players').textContent = parseInt(document.getElementById('total-players').textContent) + 1;
+            } else {
+                alert('Player not found');
+            }
+        }
+
+        function deleteRow(button) {
+            const row = button.parentNode.parentNode;
+            row.parentNode.removeChild(row);
+            document.getElementById('total-players').textContent = parseInt(document.getElementById('total-players').textContent) - 1;
+        }
+
+        async function createTeams(event) {
+            event.preventDefault();
+            try {
+                const rows = document.querySelectorAll('#members-table-body tr');
+                const players = Array.from(rows).map(row => ({
+                    id: row.cells[0].textContent,
+                    firstname: row.cells[1].textContent,
+                    lastname: row.cells[2].textContent,
+                    gender: row.cells[3].textContent
+                }));
+
+                // Calcul du nombre d'équipes
+                const numPlayers = players.length;
+                const numTeams = Math.ceil(numPlayers / 3);
+
+                // Séparation des joueurs par sexe
+                const women = players.filter(player => player.gender === 'F');
+                const men = players.filter(player => player.gender !== 'F');
+
+                // Mélange des joueurs
+                shuffle(women);
+                shuffle(men);
+
+                // Création des équipes
+                const teams = Array.from({ length: numTeams }, () => []);
+
+                let womenMen = women.concat(men); // Concaténation des listes de joueurs
+
+                // Répartition des joueurs dans les équipes
+                for (let i = 0; i < womenMen.length; i++) {
+                    teams[i % numTeams].push(womenMen[i]);
+                }
+
+                displayTeams(teams);
+            } catch (error) {
+                console.error('Error creating teams:', error);
+                alert('An error occurred while creating teams. Please check the console for more details.');
+            }
+        }
+
+        function displayTeams(teams) {
+            const teamsTable = document.getElementById('teams-table-body');
+            teamsTable.innerHTML = ''; // Clear existing rows
+            teams.forEach((team, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+            <td>Team ${index + 1}</td>
+            <td>${team[0] ? team[0].firstname + ' ' + team[0].lastname : ''}</td>
+            <td>${team[1] ? team[1].firstname + ' ' + team[1].lastname : ''}</td>
+            <td>${team[2] ? team[2].firstname + ' ' + team[2].lastname : ''}</td>
+        `;
+                teamsTable.appendChild(row);
+            });
+        }
+
+        async function fieldAttibution(event) {
+            event.preventDefault();
+            const numFields = Math.ceil(document.querySelectorAll('#teams-table-body tr').length / 2);
+            const rows = document.querySelectorAll('#teams-table-body tr');
+            const teams = Array.from(rows).map(row => ({
+                team: row.cells[0].textContent,
+                player1: row.cells[1].textContent,
+                player2: row.cells[2].textContent,
+                player3: row.cells[3].textContent
+            }));
+
+            const fields = Array.from({ length: numFields }, () => []);
+
+            for (let i = 0; i < teams.length; i++) {
+                fields[Math.floor(i / 2)].push(teams[i]);
+            }
+
+            displayFields(fields);
+        }
+
+        function displayFields(fields) {
+            const fieldsTable = document.getElementById('fields-table-body');
+            fieldsTable.innerHTML = ''; // Clear existing rows
+            fields.forEach((field, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+            <td>Field ${index + 1}</td>
+            <td>${field[0] ? field[0].team : ''}</td>
+            <td>${field[0] ? field[0].player1 : ''}</td>
+            <td>${field[0] ? field[0].player2 : ''}</td>
+            <td>${field[0] ? field[0].player3 : ''}</td>
+            <td>${field[1] ? field[1].team : ''}</td>
+            <td>${field[1] ? field[1].player1 : ''}</td>
+            <td>${field[1] ? field[1].player2 : ''}</td>
+            <td>${field[1] ? field[1].player3 : ''}</td>
+        `;
+                fieldsTable.appendChild(row);
+            });
+        }
+    </script>
+</head>
+<body>
+    <button onclick="window.location.href='/'">Accueil</button>
+    <h1>Création d'un challenge</h1>
+    <h2>Etape 1 : Lister les joueurs présents</h2>
+    <form onsubmit="searchPlayer(event)">
+        <input type="text" id="player-id" placeholder="Identifiant du joueur" required>
+        <button type="submit">Rechercher</button>
+    </form>
+
+    <h3>Liste des joueurs</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Identifiant</th>
+                <th>Prénom</th>
+                <th>Nom</th>
+                <th>Sexe</th>
+                <th>Âge</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="members-table-body">
+        </tbody>
+    </table>
+
+    <p>Nombre total de joueur : <span id="total-players">0</span></p>
+
+    <h2>Etape 2 : Création des équipes aléatoires</h2>
+    <button onclick="createTeams(event)">Créer les équipes</button>
+
+    <h3>Liste des équipes</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Équipe</th>
+                <th>Joueur 1</th>
+                <th>Joueur 2</th>
+                <th>Joueur 3</th>
+            </tr>
+        </thead>
+        <tbody id="teams-table-body">
+        </tbody>
+    </table>
+
+    <h2>Etape 3 : Sélectionner le nombre de terrains</h2>
+    <label for="num-fields">Nombre de terrains:</label>
+    <select id="num-fields">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+        <option value="8">8</option>
+        <option value="9">9</option>
+        <option value="10">10</option>
+        <option value="11">11</option>
+        <option value="12">12</option>
+        <option value="13">13</option>
+        <option value="14">14</option>
+        <option value="15">15</option>
+    </select>
+
+    <button onclick="fieldAttibution(event)">Attribution des terrain</button>
+
+    <h3>Liste des terrains</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Terrain</th>
+                <th>Équipe 1</th>
+                <th>Joueur 1</th>
+                <th>Joueur 2</th>
+                <th>Joueur 3</th>
+                <th>Équipe 2</th>
+                <th>Joueur 1</th>
+                <th>Joueur 2</th>
+                <th>Joueur 3</th>
+            </tr>
+        </thead>
+        <tbody id="fields-table-body">
+        </tbody>
+    </table>
+
+</body>
+</html>

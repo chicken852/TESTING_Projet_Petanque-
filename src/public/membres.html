@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Member Page</title>
+  <script>
+    async function fetchMembers() {
+      const response = await fetch('/api/members');
+      const members = await response.json();
+      const membersTable = document.getElementById('members-table-body');
+      membersTable.innerHTML = ''; // Clear existing rows
+      members.forEach(member => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+        <td>${member.id}</td>
+        <td>${member.firstname}</td>
+        <td>${member.lastname}</td>
+        <td>${member.gender}</td>
+        <td>${member.age}</td>
+        <td>${member.rank}</td>
+        <td><button onclick="deleteMember(${member.id})">Supprimer</button></td>
+      `;
+        membersTable.appendChild(row);
+      });
+    }
+
+    function showForm() {
+      document.getElementById('member-form').style.display = 'block';
+    }
+
+    async function addMember(event) {
+      event.preventDefault();
+      const formData = new FormData(event.target);
+      const data = Object.fromEntries(formData.entries());
+      const response = await fetch('/api/members', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+      if (response.ok) {
+        await fetchMembers();
+        event.target.reset();
+        document.getElementById('member-form').style.display = 'none';
+      } else {
+        alert('Error adding member');
+      }
+      window.location.reload();
+    }
+
+    async function deleteMember(id) {
+      const confirmation = confirm('Are you sure you want to delete this member?');
+      if (confirmation) {
+        const response = await fetch(`/api/members/${id}`, {
+          method: 'DELETE'
+        });
+        if (response.ok) {
+          fetchMembers();
+        } else {
+          alert('Error deleting member');
+        }
+      }
+    }
+
+    window.onload = fetchMembers;
+  </script>
+</head>
+<body>
+  <button onclick="window.location.href='/'">Accueil</button>
+  <h1>Bienvenue sur la page des membres !</h1>
+  <button onclick="showForm()">Ajouter un membre</button>
+  <form id="member-form" style="display:none;" onsubmit="addMember(event)">
+    <label for="firstname">Prénom:</label>
+    <input type="text" id="firstname" name="firstname" required><br>
+    <label for="lastname">Nom:</label>
+    <input type="text" id="lastname" name="lastname" required><br>
+    <label for="gender">Genre:</label>
+    <select id="gender" name="gender" required>
+      <option value="homme">Homme</option>
+      <option value="femme">Femme</option>
+      <option value="enfant">Enfant</option>
+    </select><br>
+    <label for="age">Âge:</label>
+    <input type="number" id="age" name="age" required><br>
+    <label for="birthdate">Date de naissance:</label>
+    <input type="date" id="birthdate" name="birthdate" required><br>
+    <label for="rank">Rang:</label>
+    <select name="rank" id="rank">
+        <option value="junior">Junior</option>
+        <option value="Senior">Senior</option>
+        <option value="veteran">Vétéran</option>
+    </select>
+    <br>
+    <button type="submit">Ajouter</button>
+  </form>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Prénom</th>
+        <th>Nom</th>
+        <th>Genre</th>
+        <th>Âge</th>
+        <th>Rang</th>
+      </tr>
+    </thead>
+    <tbody id="members-table-body">
+      <!-- Members will be populated here -->
+    </tbody>
+  </table>
+  </body>
+</html>
