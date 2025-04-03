@@ -43,15 +43,34 @@ router.get('/api/members', async (req, res) => {
 
 // Route pour ajouter un membre
 router.post('/api/members', async (req, res) => {
-    let { firstname, lastname, gender, age, birthdate, rank } = req.body;
+    let { firstname, lastname, gender, birthdate} = req.body;
+    let rank;
+    let age = calculerAge(birthdate);
     try {
-        if (gender === "Homme") {
+        if (gender === 'homme' || gender === 'Homme') {
             gender = 'M';
-        } else if (gender === "Femme") {
+        } else if (gender === 'femme' || gender === 'Femme') {
             gender = 'F';
         } else {
             gender = 'K';
         }
+
+        if (Number(age) < 18)
+        {
+            rank = 'Junior';
+        } else if (gender === "F")
+        {
+            rank = 'Femme';
+        } else if (Number(age) >= 18 && Number(age) <= 50 && gender === "M")
+        {
+            rank = 'Senior';
+        } else
+        {
+            rank = 'Veteran';
+        }
+
+
+
         const result = await pool.query(
             'INSERT INTO members (firstname, lastname, gender, age, birthday, rank) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
             [firstname, lastname, gender, age, birthdate, rank]
@@ -94,5 +113,23 @@ router.delete('/api/members/:id', async (req, res) => {
         res.status(500).send('Server Error');
     }
 });
+
+// FONCTIONS
+
+function calculerAge(dateNaissance) {
+    const naissance = new Date(dateNaissance);
+    const aujourdHui = new Date();
+
+    let age = aujourdHui.getFullYear() - naissance.getFullYear();
+    const mois = aujourdHui.getMonth() - naissance.getMonth();
+    const jour = aujourdHui.getDate() - naissance.getDate();
+
+    // Vérifie si l'anniversaire est passé cette année
+    if (mois < 0 || (mois === 0 && jour < 0)) {
+        age--;
+    }
+
+    return age;
+}
 
 module.exports = router;
