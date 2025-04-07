@@ -14,11 +14,11 @@
         const row = document.createElement('tr');
         row.innerHTML = `
         <td>${member.id}</td>
-        <td>${member.firstname}</td>
-        <td>${member.lastname}</td>
-        <td>${member.gender}</td>
+        <td>${member.prenom}</td>
+        <td>${member.nom}</td>
+        <td>${member.genre}</td>
         <td>${member.age}</td>
-        <td>${member.rank}</td>
+        <td>${member.rang}</td>
         <td><button onclick="deleteMember(${member.id})">Supprimer</button></td>
       `;
         membersTable.appendChild(row);

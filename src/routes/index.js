@@ -33,7 +33,7 @@ router.get('/challenges/creation', (req, res) => {
 // Route pour récupérer les membres de la base de données
 router.get('/api/members', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM members');
+        const result = await pool.query('SELECT * FROM membres');
         res.json(result.rows);
     } catch (err) {
         console.error(err);
@@ -48,31 +48,33 @@ router.post('/api/members', async (req, res) => {
     let age = calculerAge(birthdate);
     try {
         if (gender === 'homme' || gender === 'Homme') {
-            gender = 'M';
+            gender = 'H';
         } else if (gender === 'femme' || gender === 'Femme') {
             gender = 'F';
         } else {
             gender = 'K';
         }
 
-        if (Number(age) < 18)
-        {
-            rank = 'Junior';
-        } else if (gender === "F")
+        if (gender === "F")
         {
             rank = 'Femme';
-        } else if (Number(age) >= 18 && Number(age) <= 50 && gender === "M")
+        } 
+        else if (Number(age) < 18)
         {
-            rank = 'Senior';
+            rank = 'Junior';
+        }
+        else if (Number(age) >= 18 && Number(age) <= 50 && gender === "H")
+        {
+            rank = 'Sénior';
         } else
         {
-            rank = 'Veteran';
+            rank = 'Vétéran';
         }
 
 
 
         const result = await pool.query(
-            'INSERT INTO members (firstname, lastname, gender, age, birthday, rank) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            'INSERT INTO membres (prenom, nom, genre, age, date_naissance, rang) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
             [firstname, lastname, gender, age, birthdate, rank]
         );
         res.status(201).json(result.rows[0]);
@@ -86,7 +88,7 @@ router.post('/api/members', async (req, res) => {
 router.get('/api/members/:id', async (req, res) => {
     const { id } = req.params;
     try {
-        const result = await pool.query('SELECT * FROM members WHERE id = $1', [id]);
+        const result = await pool.query('SELECT * FROM membres WHERE id = $1', [id]);
         if (result.rows.length > 0) {
             res.json(result.rows[0]);
         } else {
@@ -102,7 +104,7 @@ router.get('/api/members/:id', async (req, res) => {
 router.delete('/api/members/:id', async (req, res) => {
     const { id } = req.params;
     try {
-        const result = await pool.query('DELETE FROM members WHERE id = $1 RETURNING *', [id]);
+        const result = await pool.query('DELETE FROM membres WHERE id = $1 RETURNING *', [id]);
         if (result.rows.length > 0) {
             res.status(200).json(result.rows[0]);
         } else {
