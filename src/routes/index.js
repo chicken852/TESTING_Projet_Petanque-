@@ -116,6 +116,46 @@ router.delete('/api/members/:id', async (req, res) => {
     }
 });
 
+// Route pour mettre à jour un membre
+router.put('/api/members/:id', async (req, res) => {
+    const { id } = req.params;
+    let { firstname, lastname, gender, birthdate } = req.body;
+    let rank;
+    let age = calculerAge(birthdate);
+    try {
+        if (gender === 'homme' || gender === 'Homme') {
+            gender = 'H';
+        } else if (gender === 'femme' || gender === 'Femme') {
+            gender = 'F';
+        } else {
+            gender = 'K';
+        }
+
+        if (gender === "F") {
+            rank = 'Femme';
+        } else if (Number(age) < 18) {
+            rank = 'Junior';
+        } else if (Number(age) >= 18 && Number(age) <= 50 && gender === "H") {
+            rank = 'Sénior';
+        } else {
+            rank = 'Vétéran';
+        }
+
+        const result = await pool.query(
+            'UPDATE membres SET prenom = $1, nom = $2, genre = $3, age = $4, date_naissance = $5, rang = $6 WHERE id = $7 RETURNING *',
+            [firstname, lastname, gender, age, birthdate, rank, id]
+        );
+        if (result.rows.length > 0) {
+            res.json(result.rows[0]);
+        } else {
+            res.status(404).send('Member not found');
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
 // FONCTIONS
 
 function calculerAge(dateNaissance) {

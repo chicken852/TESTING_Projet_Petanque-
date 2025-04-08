@@ -13,14 +13,15 @@
       members.forEach(member => {
         const row = document.createElement('tr');
         row.innerHTML = `
-        <td>${member.id}</td>
-        <td>${member.prenom}</td>
-        <td>${member.nom}</td>
-        <td>${member.genre}</td>
-        <td>${member.age}</td>
-        <td>${member.rang}</td>
-        <td><button onclick="deleteMember(${member.id})">Supprimer</button></td>
-      `;
+          <td>${member.id}</td>
+          <td>${member.prenom}</td>
+          <td>${member.nom}</td>
+          <td>${member.genre}</td>
+          <td>${member.age}</td>
+          <td>${member.rang}</td>
+          <td><button onclick="deleteMember(${member.id})">Supprimer</button></td>
+          <td><button onclick="editMember(${member.id}, '${member.prenom}', '${member.nom}', '${member.genre}', '${member.age}', '${member.date_naissance}')">Modifier</button></td>
+        `;
         membersTable.appendChild(row);
       });
     }
@@ -29,25 +30,53 @@
       document.getElementById('member-form').style.display = 'block';
     }
 
-    async function addMember(event) {
+    function editMember(id, prenom, nom, genre, age, dateNaissance) {
+      // Fill the form with the selected member's data
+      document.getElementById('member-id').value = id;
+      document.getElementById('firstname').value = prenom;
+      document.getElementById('lastname').value = nom;
+      document.getElementById('gender').value = genre;
+      document.getElementById('birthdate').value = dateNaissance;
+      // Show the form
+      document.getElementById('member-form').style.display = 'block';
+      // Update form title
+      document.getElementById('form-title').textContent = 'Modifier un membre';
+    }
+
+    async function addOrUpdateMember(event) {
       event.preventDefault();
       const formData = new FormData(event.target);
       const data = Object.fromEntries(formData.entries());
-      const response = await fetch('/api/members', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      });
+      const memberId = data.id;
+      
+      let response;
+      if (memberId) {
+        // If there's an ID, update the member
+        response = await fetch(`/api/members/${memberId}`, {
+          method: 'PUT', // Send PUT request to update
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+      } else {
+        // If no ID, add a new member
+        response = await fetch('/api/members', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+      }
+
       if (response.ok) {
         await fetchMembers();
         event.target.reset();
         document.getElementById('member-form').style.display = 'none';
       } else {
-        alert('Error adding member');
+        alert('Error adding/updating member');
       }
-      window.location.reload();
     }
 
     async function deleteMember(id) {
@@ -71,7 +100,9 @@
   <button onclick="window.location.href='/'">Accueil</button>
   <h1>Bienvenue sur la page des membres !</h1>
   <button onclick="showForm()">Ajouter un membre</button>
-  <form id="member-form" style="display:none;" onsubmit="addMember(event)">
+  <form id="member-form" style="display:none;" onsubmit="addOrUpdateMember(event)">
+    <h3 id="form-title">Ajouter un membre</h3>
+    <input type="hidden" id="member-id" name="id">
     <label for="firstname">Prénom:</label>
     <input type="text" id="firstname" name="firstname" required><br>
     <label for="lastname">Nom:</label>
@@ -84,7 +115,7 @@
     <br>
     <label for="birthdate">Date de naissance:</label>
     <input type="date" id="birthdate" name="birthdate" required><br>
-    <button type="submit">Ajouter</button>
+    <button type="submit">Ajouter / Modifier</button>
   </form>
   <table>
     <thead>
@@ -95,11 +126,12 @@
         <th>Genre</th>
         <th>Âge</th>
         <th>Rang</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody id="members-table-body">
       <!-- Members will be populated here -->
     </tbody>
   </table>
-  </body>
+</body>
 </html>
