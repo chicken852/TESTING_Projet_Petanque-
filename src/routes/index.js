@@ -156,6 +156,49 @@ router.put('/api/members/:id', async (req, res) => {
     }
 });
 
+// Store new teams in database
+router.post('/api/teams', async (req, res) => {
+    const client = await pool.connect();
+    try {
+      const { teams } = req.body;
+  
+      await client.query('BEGIN');
+  
+      for (const team of teams) {
+        // Determine team type based on number of members
+        const type = team.length === 3 ? 'T' : 'D';
+  
+        // Insert into Equipes
+        const equipeResult = await client.query(
+          `INSERT INTO Equipes (type) VALUES ($1) RETURNING id`,
+          [type]
+        );
+        const equipeId = equipeResult.rows[0].id;
+  
+        // Extract member IDs
+        const membre1 = team[0]?.id || null;
+        const membre2 = team[1]?.id || null;
+        const membre3 = team[2]?.id || null;
+  
+        // Insert into Membres_Equipes
+        await client.query(
+          `INSERT INTO Membres_Equipes (equipe_id, membre1, membre2, membre3)
+           VALUES ($1, $2, $3, $4)`,
+          [equipeId, membre1, membre2, membre3]
+        );
+      }
+  
+      await client.query('COMMIT');
+      res.status(201).json({ message: 'Teams saved successfully' });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      console.error('Error saving teams:', err);
+      res.status(500).json({ error: 'Failed to save teams' });
+    } finally {
+      client.release();
+    }
+  });
+
 // FONCTIONS
 
 function calculerAge(dateNaissance) {

@@ -16,7 +16,33 @@ const createTables = async () => {
         rang VARCHAR(25) NOT NULL
     );
 
-    INSERT INTO "membres" ("prenom", "nom", "genre", "age", "date_naissance", "victoires", "defaites", "rang") VALUES
+    CREATE TABLE fields (
+        Id SERIAL PRIMARY KEY,
+        type VARCHAR(25) CHECK (type IN ('indoor', 'outdoor')) NOT NULL
+    );
+
+    CREATE TABLE Equipes (
+        Id SERIAL PRIMARY KEY,
+        type CHAR(1) CHECK (type IN ('T', 'D')) NOT NULL
+    );
+
+    CREATE TABLE Membres_Equipes (
+        Id SERIAL PRIMARY KEY,
+        equipe_id INTEGER REFERENCES Equipes(Id),
+        membre1 INTEGER REFERENCES Membres(Id),
+        membre2 INTEGER REFERENCES Membres(Id),
+        membre3 INTEGER REFERENCES Membres(Id),
+        date_ajout TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE match_teams (
+        match_id SERIAL PRIMARY KEY,
+        equipe1 INTEGER REFERENCES Equipes(Id),
+        equipe2 INTEGER REFERENCES Equipes(Id),
+        field_id INTEGER REFERENCES fields(Id)
+    );
+
+  INSERT INTO "membres" ("prenom", "nom", "genre", "age", "date_naissance", "victoires", "defaites", "rang") VALUES
 	('Emma', 'Durand', 'F', 30, '1994-08-21', 0, 0, 'Femme'),
     ('Sophie', 'Lefevre', 'F', 40, '1984-02-10', 0, 0, 'Femme'),
     ('Isabelle', 'Moreau', 'F', 35, '1989-11-05', 0, 0, 'Femme'),

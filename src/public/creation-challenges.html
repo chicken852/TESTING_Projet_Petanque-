@@ -33,9 +33,9 @@
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${player.id}</td>
-                    <td>${player.firstname}</td>
-                    <td>${player.lastname}</td>
-                    <td>${player.gender}</td>
+                    <td>${player.prenom}</td>
+                    <td>${player.nom}</td>
+                    <td>${player.genre}</td>
                     <td>${player.age}</td>
                     <td><button onclick="deleteRow(this)">Supprimer</button></td>
                 `;
@@ -86,11 +86,35 @@
                 }
 
                 displayTeams(teams);
+
+                await sendTeamsToServer(teams);
+                
             } catch (error) {
                 console.error('Error creating teams:', error);
                 alert('An error occurred while creating teams. Please check the console for more details.');
             }
         }
+
+        async function sendTeamsToServer(teams) {
+            try {
+              const response = await fetch('/api/teams', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ teams })
+              });
+          
+              if (!response.ok) {
+                throw new Error('Failed to save teams');
+              }
+          
+              const result = await response.json();
+              console.log(result.message);
+            } catch (error) {
+              console.error('Error saving teams:', error);
+            }
+          }
 
         function displayTeams(teams) {
             const teamsTable = document.getElementById('teams-table-body');
