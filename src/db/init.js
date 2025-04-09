@@ -23,7 +23,8 @@ const createTables = async () => {
 
     CREATE TABLE Equipes (
         Id SERIAL PRIMARY KEY,
-        type CHAR(1) CHECK (type IN ('T', 'D')) NOT NULL
+        type CHAR(1) CHECK (type IN ('T', 'D')) NOT NULL,
+        score INTEGER DEFAULT 0,
     );
 
     CREATE TABLE Membres_Equipes (
