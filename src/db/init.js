@@ -16,15 +16,16 @@ const createTables = async () => {
         rang VARCHAR(25) NOT NULL
     );
 
-    CREATE TABLE fields (
+    CREATE TABLE terrains (
         Id SERIAL PRIMARY KEY,
-        type VARCHAR(25) CHECK (type IN ('indoor', 'outdoor')) NOT NULL
+        type VARCHAR(25) CHECK (type IN ('indoor', 'outdoor')) NOT NULL,
+        disponible BOOLEAN DEFAULT TRUE
     );
 
     CREATE TABLE Equipes (
         Id SERIAL PRIMARY KEY,
         type CHAR(1) CHECK (type IN ('T', 'D')) NOT NULL,
-        score INTEGER DEFAULT 0,
+        score INTEGER DEFAULT 0
     );
 
     CREATE TABLE Membres_Equipes (
@@ -36,11 +37,11 @@ const createTables = async () => {
         date_ajout TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
-    CREATE TABLE match_teams (
+    CREATE TABLE match_equipes (
         match_id SERIAL PRIMARY KEY,
         equipe1 INTEGER REFERENCES Equipes(Id),
         equipe2 INTEGER REFERENCES Equipes(Id),
-        field_id INTEGER REFERENCES fields(Id)
+        terrain_id INTEGER REFERENCES terrains(Id)
     );
 
   INSERT INTO "membres" ("prenom", "nom", "genre", "age", "date_naissance", "victoires", "defaites", "rang") VALUES

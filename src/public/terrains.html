@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script>
+        async function loadTerrains() {
+            const res = await fetch('/api/terrains');
+            const data = await res.json();
+            console.log(data); // Log the data received from the API
+        
+            const tbody = document.querySelector('#terrains-table tbody');
+            tbody.innerHTML = '';
+            data.terrains.forEach(terrain => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${terrain.id}</td>
+                    <td>${terrain.type}</td>
+                    <td>${terrain.disponible ? 'Oui' : 'Non'}</td>
+                    <td><button onclick="toggleTerrain(${terrain.id}, ${!terrain.disponible})">
+                        ${terrain.disponible ? 'Désactiver' : 'Activer'}
+                    </button></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+    
+        async function toggleTerrain(id, disponible) {
+            await fetch(`/api/terrains/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ disponible })
+            });
+            loadTerrains(); // Refresh
+        }
+    
+        loadTerrains();
+    </script>
+</head>
+<body>
+    <button onclick="window.location.href='/'">Accueil</button>
+    <h3>Gestion des Terrains</h3>
+    <table id="terrains-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Type</th>
+            <th>Disponible</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+</body>
+</html>

@@ -26,7 +26,9 @@ router.get('/challenges/creation', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'public', 'creation-challenges.html'));  // Serve creer-challenge.html
 });
 
-
+router.get('/terrains', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'public', 'terrains.html'));  // Serve terrains.html
+});
 
 // ROUTES AVEC LA BASE DE DONNÉES
 
@@ -210,6 +212,42 @@ router.post('/api/teams', async (req, res) => {
       client.release();
     }
   });
+
+  // Get all terrains from database
+  router.get('/api/terrains/disponibles', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM terrains WHERE disponible = TRUE ORDER BY id');
+        res.json({ terrains: result.rows });
+    } catch (error) {
+        console.error('Error fetching available terrains:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des terrains disponibles.' });
+    }
+});
+
+// Toggle terrain availability
+router.put('/api/terrains/:id', async (req, res) => {
+    const { id } = req.params;
+    const { disponible } = req.body;
+  
+    try {
+      await pool.query('UPDATE terrains SET disponible = $1 WHERE id = $2', [disponible, id]);
+      res.json({ message: 'Terrain mis à jour avec succès.' });
+    } catch (error) {
+      console.error('Error updating terrain:', error);
+      res.status(500).json({ error: 'Erreur lors de la mise à jour du terrain.' });
+    }
+  });
+
+  // Get all terrains from database
+  router.get('/api/terrains', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM terrains ORDER BY id');
+        res.json({ terrains: result.rows });
+    } catch (error) {
+        console.error(error); // Log the error for debugging
+        res.status(500).json({ error: 'Erreur lors de la récupération des terrains.' });
+    }
+});
 
 // FONCTIONS
 
