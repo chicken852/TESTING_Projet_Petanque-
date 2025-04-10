@@ -156,6 +156,18 @@ router.put('/api/members/:id', async (req, res) => {
     }
 });
 
+// Get last teams from database
+router.get('/api/teams/count', async (req, res) => {
+    try {
+      const result = await pool.query('SELECT COUNT(*) FROM Equipes');
+      const count = parseInt(result.rows[0].count, 10);
+      res.json({ count });
+    } catch (error) {
+      console.error('Error fetching team count:', error);
+      res.status(500).json({ error: 'Error fetching team count' });
+    }
+  });
+
 // Store new teams in database
 router.post('/api/teams', async (req, res) => {
     const client = await pool.connect();

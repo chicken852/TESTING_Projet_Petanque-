@@ -55,6 +55,10 @@
         async function createTeams(event) {
             event.preventDefault();
             try {
+                //Get current team count from backend
+                const countRes = await fetch('/api/teams/count');
+                const { count } = await countRes.json();
+
                 const rows = document.querySelectorAll('#members-table-body tr');
                 const players = Array.from(rows).map(row => ({
                     id: row.cells[0].textContent,
@@ -85,7 +89,7 @@
                     teams[i % numTeams].push(womenMen[i]);
                 }
 
-                displayTeams(teams);
+                displayTeams(teams, count);
 
                 await sendTeamsToServer(teams);
                 
@@ -116,13 +120,14 @@
             }
           }
 
-        function displayTeams(teams) {
+        function displayTeams(teams, offset = 0) {
             const teamsTable = document.getElementById('teams-table-body');
             teamsTable.innerHTML = ''; // Clear existing rows
+
             teams.forEach((team, index) => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-            <td>Team ${index + 1}</td>
+            <td>Team ${index + 1 + offset}</td>
             <td>${team[0] ? team[0].firstname + ' ' + team[0].lastname : ''}</td>
             <td>${team[1] ? team[1].firstname + ' ' + team[1].lastname : ''}</td>
             <td>${team[2] ? team[2].firstname + ' ' + team[2].lastname : ''}</td>
