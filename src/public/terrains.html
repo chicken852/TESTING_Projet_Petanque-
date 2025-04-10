@@ -24,6 +24,9 @@
                 `;
                 tbody.appendChild(row);
             });
+
+            // Load available fields at the bottom
+            loadAvailableFields(data.terrains);
         }
     
         async function toggleTerrain(id, disponible) {
@@ -34,7 +37,22 @@
             });
             loadTerrains(); // Refresh
         }
-    
+
+        function loadAvailableFields(terrains) {
+            const availableFields = terrains.filter(terrain => terrain.disponible); // Only available fields
+            const availableTbody = document.querySelector('#available-fields-table tbody');
+            availableTbody.innerHTML = ''; // Clear existing content
+
+            availableFields.forEach(terrain => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${terrain.id}</td>
+                    <td>${terrain.type}</td>
+                `;
+                availableTbody.appendChild(row);
+            });
+        }
+
         loadTerrains();
     </script>
 </head>
@@ -42,15 +60,26 @@
     <button onclick="window.location.href='/'">Accueil</button>
     <h3>Gestion des Terrains</h3>
     <table id="terrains-table">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Type</th>
-            <th>Disponible</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-    <tbody></tbody>
-</table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Type</th>
+                <th>Disponible</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <h3>Terrains Disponibles</h3>
+    <table id="available-fields-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Type</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
 </body>
 </html>
