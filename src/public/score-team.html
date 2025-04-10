@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Give Team Score</title>
+</head>
+<body>
+    <button onclick="window.location.href='/'">Accueil</button>
+    <h1>Give a Score to a Team</h1>
+
+    <form id="score-form">
+        <label for="team-id">Team ID:</label>
+        <input type="number" id="team-id" name="team-id" required>
+        <br><br>
+
+        <label for="score">Score:</label>
+        <input type="number" id="score" name="score" min="0" required>
+        <br><br>
+
+        <button type="submit">Submit Score</button>
+    </form>
+
+    <script>
+        // Handle form submission
+        document.getElementById('score-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const teamId = document.getElementById('team-id').value;
+            const newScore = document.getElementById('score').value;
+
+            // Fetch the current score of the team from the database
+            const response = await fetch(`/api/teams/${teamId}`);
+            if (response.ok) {
+                const teamData = await response.json();
+                const oldScore = teamData.score;  // Assuming 'score' is the field in the response
+
+                // Display a confirmation dialog with the old and new score
+                const confirmation = confirm(`You are about to change this team's score from ${oldScore} to ${newScore}. Do you want to proceed?`);
+                if (confirmation) {
+                    // Proceed with updating the score
+                    const updateResponse = await fetch(`/api/teams/${teamId}/score`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ score: newScore })
+                    });
+
+                    if (updateResponse.ok) {
+                        alert('Score submitted successfully!');
+                        location.reload();  // Refresh the page after submitting the score
+                    } else {
+                        alert('Error submitting score');
+                    }
+                }
+            } else {
+                alert('Error fetching team data');
+            }
+        });
+    </script>
+</body>
+</html>

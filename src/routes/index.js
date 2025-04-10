@@ -30,6 +30,50 @@ router.get('/terrains', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'public', 'terrains.html'));  // Serve terrains.html
 });
 
+router.get('/score-team', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'public', 'score-team.html'));  // Serve score-team.html
+});
+
+router.post('/api/teams/:id/score', async (req, res) => {
+    const { id } = req.params;  // Get team ID from URL params
+    const { score } = req.body; // Get score from request body
+
+    try {
+        // Update the team's score in the database
+        const result = await pool.query(
+            'UPDATE Equipes SET score = $1 WHERE id = $2 RETURNING *',
+            [score, id]
+        );
+
+        if (result.rows.length > 0) {
+            res.status(200).json({ message: 'Score updated successfully', team: result.rows[0] });
+        } else {
+            res.status(404).send('Team not found');
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// Get team by ID (with current score)
+router.get('/api/teams/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('SELECT * FROM Equipes WHERE id = $1', [id]);
+        if (result.rows.length > 0) {
+            const team = result.rows[0];
+            // Assuming 'score' is a column in your 'Equipes' table
+            res.json({ score: team.score });
+        } else {
+            res.status(404).send('Team not found');
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
 // ROUTES AVEC LA BASE DE DONNÉES
 
 // Route pour récupérer les membres de la base de données
