@@ -27,35 +27,21 @@
             event.preventDefault();
 
             const teamId = document.getElementById('team-id').value;
-            const newScore = document.getElementById('score').value;
+            const score = document.getElementById('score').value;
 
-            // Fetch the current score of the team from the database
-            const response = await fetch(`/api/teams/${teamId}`);
+            const response = await fetch(`/api/teams/${teamId}/score`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ score })
+            });
+
             if (response.ok) {
-                const teamData = await response.json();
-                const oldScore = teamData.score;  // Assuming 'score' is the field in the response
-
-                // Display a confirmation dialog with the old and new score
-                const confirmation = confirm(`You are about to change this team's score from ${oldScore} to ${newScore}. Do you want to proceed?`);
-                if (confirmation) {
-                    // Proceed with updating the score
-                    const updateResponse = await fetch(`/api/teams/${teamId}/score`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ score: newScore })
-                    });
-
-                    if (updateResponse.ok) {
-                        alert('Score submitted successfully!');
-                        location.reload();  // Refresh the page after submitting the score
-                    } else {
-                        alert('Error submitting score');
-                    }
-                }
+                alert('Score submitted successfully!');
+                location.reload();  // Refresh the page after submitting the score
             } else {
-                alert('Error fetching team data');
+                alert('Error submitting score');
             }
         });
     </script>
