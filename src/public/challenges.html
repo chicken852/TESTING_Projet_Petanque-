@@ -3,10 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <title>Pages de challenges</title>
+    <style>
+        /* Styling for the score form modal */
+        #score-form-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        #score-form-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 300px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+    </style>
+    <script>
+        let currentMatchId = null;
+
+        // Show the score form modal
+        function showScoreForm(matchId) {
+            currentMatchId = matchId;
+            document.getElementById('score-form-modal').style.display = 'flex';
+        }
+
+        // Close the score form modal
+        function closeScoreForm() {
+            document.getElementById('score-form-modal').style.display = 'none';
+        }
+
+        async function displayCurrentMatches() {
+            try {
+                const response = await fetch('/api/current-matches');
+                if (response.ok) {
+                    const matches = await response.json();
+                    const tableBody = document.getElementById('matches-table-body');
+                    tableBody.innerHTML = ''; // Clear existing content
+        
+                    matches.forEach(match => {
+                        const row = document.createElement('tr');
+        
+                        // Create table cells for match details
+                        const td = val => {
+                            const cell = document.createElement('td');
+                            cell.textContent = val;
+                            return cell;
+                        };
+        
+                        // Add match data
+                        row.appendChild(td(`Match ${match.match_id}`));
+                        row.appendChild(td(`Team 1 (${match.equipe1_type}) - ${match.equipe1_score}`));  // Show team 1 and their score
+                        row.appendChild(td(`Team 2 (${match.equipe2_type}) - ${match.equipe2_score}`));  // Show team 2 and their score
+                        row.appendChild(td(`Field ${match.terrain_id} - ${match.terrain_type}`));
+        
+                        // Add a button to open the score form
+                        const scoreButton = document.createElement('button');
+                        scoreButton.textContent = 'Enter Scores';
+                        scoreButton.onclick = () => showScoreForm(match.match_id);
+                        const tdButton = document.createElement('td');
+                        tdButton.appendChild(scoreButton);
+                        row.appendChild(tdButton);
+        
+                        // Append to the table body
+                        tableBody.appendChild(row);
+                    });
+                } else {
+                    console.error('Failed to fetch matches');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function submitScoreForm() {
+            const team1Score = parseInt(document.getElementById('team1-score').value, 10);
+            const team2Score = parseInt(document.getElementById('team2-score').value, 10);
+          
+            // Log the values to ensure they are integers
+            console.log(`Team 1 Score: ${team1Score}, Team 2 Score: ${team2Score}`);
+          
+            if (isNaN(team1Score) || isNaN(team2Score)) {
+                alert('Both scores are required');
+                return;
+            }
+          
+            // Calculate the updated scores
+            let team1NewScore = team1Score;
+            let team2NewScore = team2Score;
+          
+            if (team2Score > team1Score) {
+                // Team 2 wins: 100 + (score difference)
+                team2NewScore = 100 + (team2Score - team1Score);
+            } else if (team1Score > team2Score) {
+                // Team 1 wins: 100 + (score difference)
+                team1NewScore = 100 + (team1Score - team2Score);
+            }
+          
+            // Log the final values to be sent to the backend
+            console.log(`Final Team 1 Score: ${team1NewScore}, Final Team 2 Score: ${team2NewScore}`);
+          
+            // Send the new scores to the backend
+            const response = await fetch(`/api/update-match-score/${currentMatchId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ team1Score: team1NewScore, team2Score: team2NewScore }),
+            });
+          
+            if (response.ok) {
+                alert('Scores updated successfully');
+                closeScoreForm();  // Close the form modal
+                displayCurrentMatches();  // Refresh the matches table
+            } else {
+                alert('Error updating scores');
+            }
+        }
+
+        // Fetch and display matches every 5 seconds
+        setInterval(displayCurrentMatches, 5000);
+
+        // Initial call to display matches
+        window.onload = displayCurrentMatches;
+    </script>
 </head>
 <body>
     <button onclick="window.location.href='/'">Accueil</button>
     <h1>Pages de challenges</h1>
     <button onclick="window.location.href='/challenges/creation'">Création d'un challenge</button>
+
+    <h1>Current Challenge Matches</h1>
+
+    <h3>Liste des matches et terrains</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Match</th>
+                <th>Équipe 1</th>
+                <th>Équipe 2</th>
+                <th>Terrain</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="matches-table-body">
+            <!-- Matches will be dynamically filled here -->
+        </tbody>
+    </table>
+
+    <!-- Score Form Modal -->
+    <div id="score-form-modal">
+        <div id="score-form-container">
+            <h3>Enter Scores</h3>
+            <div class="form-group">
+                <label for="team1-score">Team 1 Score:</label>
+                <input type="number" id="team1-score" required>
+            </div>
+            <div class="form-group">
+                <label for="team2-score">Team 2 Score:</label>
+                <input type="number" id="team2-score" required>
+            </div>
+            <div>
+                <button onclick="submitScoreForm()">Submit</button>
+                <button onclick="closeScoreForm()">Cancel</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

@@ -68,6 +68,67 @@ router.post('/api/teams/:id/score', async (req, res) => {
     }
 });
 
+router.get('/api/current-matches', async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                me.match_id, 
+                e1.type AS equipe1_type, 
+                e2.type AS equipe2_type, 
+                e1.score AS equipe1_score, 
+                e2.score AS equipe2_score, 
+                t.id AS terrain_id, 
+                t.type AS terrain_type
+            FROM match_equipes me
+            JOIN Equipes e1 ON e1.Id = me.equipe1
+            JOIN Equipes e2 ON e2.Id = me.equipe2
+            JOIN terrains t ON t.Id = me.terrain_id;
+        `;
+        const result = await pool.query(query);
+        res.json(result.rows);  // Send the result with team scores and terrain information
+    } catch (error) {
+        console.error('Error fetching current matches:', error);
+        res.status(500).json({ error: 'Error fetching matches' });
+    }
+});
+
+router.post('/api/update-match-score/:matchId', async (req, res) => {
+    const { matchId } = req.params;
+    const { team1Score, team2Score } = req.body;
+
+    // Ensure the scores are integers (parse with radix 10)
+    const team1ScoreInt = parseInt(team1Score, 10);
+    const team2ScoreInt = parseInt(team2Score, 10);
+
+    // Check if the scores are valid integers
+    if (isNaN(team1ScoreInt) || isNaN(team2ScoreInt)) {
+        return res.status(400).json({ error: 'Both scores must be valid numbers' });
+    }
+
+    console.log(`Team 1 Score: ${team1ScoreInt}, Team 2 Score: ${team2ScoreInt}`);  // Log for debugging
+
+    try {
+        // Update the teams' scores in the Equipes table
+        const updateScoreQuery = `
+            UPDATE Equipes
+            SET score = CASE
+                WHEN Id = (SELECT equipe1 FROM match_equipes WHERE match_id = $1) THEN $2::int
+                WHEN Id = (SELECT equipe2 FROM match_equipes WHERE match_id = $1) THEN $3::int
+            END
+            WHERE Id IN (SELECT equipe1 FROM match_equipes WHERE match_id = $1)
+               OR Id IN (SELECT equipe2 FROM match_equipes WHERE match_id = $1);
+        `;
+        
+        // Run the query with proper values (ensure integer types)
+        await pool.query(updateScoreQuery, [matchId, team1ScoreInt, team2ScoreInt]);
+
+        res.status(200).json({ message: 'Scores updated successfully' });
+    } catch (error) {
+        console.error('Error updating scores:', error);
+        res.status(500).json({ error: 'Error updating scores' });
+    }
+});
+
 router.get('/api/teams/:id', async (req, res) => {
     const { id } = req.params;
 
@@ -347,7 +408,45 @@ router.post('/api/assign-fields', async (req, res) => {
 
 /// End of changes
 
+// Endpoint to fetch all teams with their members' names
+router.get('/api/all-teams', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        // Fetch teams and their members' names
+        const result = await client.query(`
+            SELECT 
+                e.id AS team_id, 
+                e.type, 
+                e.score,
+                m1.prenom AS member1_firstname, m1.nom AS member1_lastname,
+                m2.prenom AS member2_firstname, m2.nom AS member2_lastname,
+                m3.prenom AS member3_firstname, m3.nom AS member3_lastname
+            FROM Equipes e
+            LEFT JOIN Membres_Equipes me ON e.id = me.equipe_id
+            LEFT JOIN Membres m1 ON me.membre1 = m1.id
+            LEFT JOIN Membres m2 ON me.membre2 = m2.id
+            LEFT JOIN Membres m3 ON me.membre3 = m3.id
+        `);
 
+        const teams = result.rows.map(row => ({
+            team_id: row.team_id,
+            type: row.type,
+            score: row.score,
+            members: [
+                row.member1_firstname && row.member1_lastname ? `${row.member1_firstname} ${row.member1_lastname}` : null,
+                row.member2_firstname && row.member2_lastname ? `${row.member2_firstname} ${row.member2_lastname}` : null,
+                row.member3_firstname && row.member3_lastname ? `${row.member3_firstname} ${row.member3_lastname}` : null
+            ].filter(member => member)  // Filter out null values
+        }));
+
+        res.json(teams);
+    } catch (err) {
+        console.error('Error fetching teams:', err);
+        res.status(500).json({ error: 'Failed to fetch teams' });
+    } finally {
+        client.release();
+    }
+});
 
 // FONCTIONS
 

@@ -4,12 +4,121 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Give Team Score</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7fc;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: #4A90E2;
+        }
+
+        button {
+            background-color: #4A90E2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+            margin: 10px 0;
+            display: block;
+            width: 150px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        button:hover {
+            background-color: #357ABD;
+        }
+
+        table {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            background-color: white;
+        }
+
+        th, td {
+            padding: 12px 20px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #4A90E2;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f1f6fc;
+        }
+
+        tr:hover {
+            background-color: #e1e8f4;
+        }
+
+        input[type="number"] {
+            padding: 8px;
+            font-size: 16px;
+            width: 250px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            margin-right: 10px;
+        }
+
+        form {
+            text-align: center;
+            margin: 20px;
+        }
+
+        form label {
+            font-size: 18px;
+            color: #333;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        form input[type="number"] {
+            width: 300px;
+            margin-bottom: 20px;
+            padding: 10px;
+        }
+
+        .score-form {
+            margin: 20px;
+            display: flex;
+            justify-content: center;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .score-form button {
+            padding: 12px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4A90E2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .score-form button:hover {
+            background-color: #357ABD;
+        }
+    </style>
 </head>
 <body>
     <button onclick="window.location.href='/'">Accueil</button>
     <h1>Give a Score to a Team</h1>
 
-    <form id="score-form">
+    <form id="score-form" class="score-form">
         <label for="team-id">Team ID:</label>
         <input type="number" id="team-id" name="team-id" required>
         <br><br>
@@ -20,6 +129,21 @@
 
         <button type="submit">Submit Score</button>
     </form>
+
+    <h2>Teams and Their Scores</h2>
+    <table id="teams-table">
+        <thead>
+            <tr>
+                <th>Team ID</th>
+                <th>Type</th>
+                <th>Score</th>
+                <th>Members</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Teams data will be populated here -->
+        </tbody>
+    </table>
 
     <script>
         // Handle form submission
@@ -54,11 +178,42 @@
     
             if (postResponse.ok) {
                 alert('Score updated successfully!');
-                location.reload();
+                location.reload(); // Reload page to show updated scores
             } else {
                 alert('Error updating score');
             }
         });
+
+        async function fetchTeams() {
+            try {
+                const response = await fetch('/api/all-teams');  // Fetch teams and members' names
+                if (response.ok) {
+                    const teams = await response.json();
+                    const tableBody = document.getElementById('teams-table').querySelector('tbody');
+                    tableBody.innerHTML = ''; // Clear existing content
+        
+                    teams.forEach(team => {
+                        const row = document.createElement('tr');
+        
+                        // Create table cells for team ID, type, score, and members
+                        row.innerHTML = `
+                            <td>${team.team_id}</td>
+                            <td>${team.type}</td>
+                            <td>${team.score}</td>
+                            <td>${team.members.join(', ')}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                } else {
+                    console.error('Failed to fetch teams');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Fetch teams on page load
+        window.onload = fetchTeams;
     </script>
 </body>
 </html>
