@@ -25,23 +25,38 @@
         // Handle form submission
         document.getElementById('score-form').addEventListener('submit', async (event) => {
             event.preventDefault();
-
+    
             const teamId = document.getElementById('team-id').value;
-            const score = document.getElementById('score').value;
-
-            const response = await fetch(`/api/teams/${teamId}/score`, {
+            const newScore = parseInt(document.getElementById('score').value, 10);
+    
+            // 1. Fetch current score
+            const getResponse = await fetch(`/api/teams/${teamId}`);
+            if (!getResponse.ok) {
+                alert('Team not found');
+                return;
+            }
+    
+            const teamData = await getResponse.json();
+            const oldScore = teamData.score;
+    
+            // 2. Ask for confirmation
+            const confirmed = confirm(`Do you want to change the score from ${oldScore} to ${newScore}?`);
+            if (!confirmed) return;
+    
+            // 3. Submit the new score if confirmed
+            const postResponse = await fetch(`/api/teams/${teamId}/score`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ score })
+                body: JSON.stringify({ score: newScore })
             });
-
-            if (response.ok) {
-                alert('Score submitted successfully!');
-                location.reload();  // Refresh the page after submitting the score
+    
+            if (postResponse.ok) {
+                alert('Score updated successfully!');
+                location.reload();
             } else {
-                alert('Error submitting score');
+                alert('Error updating score');
             }
         });
     </script>

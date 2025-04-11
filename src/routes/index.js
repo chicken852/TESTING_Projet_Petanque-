@@ -34,6 +34,18 @@ router.get('/score-team', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'public', 'score-team.html'));  // Serve score-team.html
 });
 
+// Get last teams from database
+router.get('/api/teams/count', async (req, res) => {
+    try {
+      const result = await pool.query('SELECT COUNT(*) FROM Equipes');
+      const count = parseInt(result.rows[0].count, 10);
+      res.json({ count });
+    } catch (error) {
+      console.error('Error fetching team count:', error);
+      res.status(500).json({ error: 'Error fetching team count' });
+    }
+  });
+
 router.post('/api/teams/:id/score', async (req, res) => {
     const { id } = req.params;  // Get team ID from URL params
     const { score } = req.body; // Get score from request body
@@ -56,7 +68,20 @@ router.post('/api/teams/:id/score', async (req, res) => {
     }
 });
 
+router.get('/api/teams/:id', async (req, res) => {
+    const { id } = req.params;
 
+    try {
+        const result = await pool.query('SELECT * FROM Equipes WHERE id = $1', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Team not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error('Error fetching team:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
 
 // ROUTES AVEC LA BASE DE DONNÉES
 
@@ -186,17 +211,6 @@ router.put('/api/members/:id', async (req, res) => {
     }
 });
 
-// Get last teams from database
-router.get('/api/teams/count', async (req, res) => {
-    try {
-      const result = await pool.query('SELECT COUNT(*) FROM Equipes');
-      const count = parseInt(result.rows[0].count, 10);
-      res.json({ count });
-    } catch (error) {
-      console.error('Error fetching team count:', error);
-      res.status(500).json({ error: 'Error fetching team count' });
-    }
-  });
 
 // Store new teams in database
 router.post('/api/teams', async (req, res) => {
