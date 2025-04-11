@@ -175,6 +175,44 @@
                 fieldsTable.appendChild(row);
             });
         }
+
+        async function assignFieldsToTeams(event) {
+            event.preventDefault();
+        
+            const rows = document.querySelectorAll('#teams-table-body tr');
+            const teams = Array.from(rows).map(row => row.cells[0].textContent.replace('Team ', ''));
+        
+            if (teams.length % 2 !== 0) {
+                alert("You need an even number of teams to form matches.");
+                return;
+            }
+        
+            const teamPairs = [];
+            for (let i = 0; i < teams.length; i += 2) {
+                teamPairs.push({
+                    equipe1Id: parseInt(teams[i]),
+                    equipe2Id: parseInt(teams[i + 1])
+                });
+            }
+        
+            try {
+                const response = await fetch('/api/assign-fields', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ teamPairs })
+                });
+        
+                const result = await response.json();
+                if (response.ok) {
+                    alert(result.message);
+                } else {
+                    alert(result.error || 'Failed to assign fields');
+                }
+            } catch (error) {
+                console.error('Error assigning fields:', error);
+                alert('Une erreur est survenue lors de l’attribution des terrains.');
+            }
+        }
     </script>
 </head>
 <body>
@@ -241,7 +279,7 @@
         <option value="15">15</option>
     </select>
 
-    <button onclick="fieldAttibution(event)">Attribution des terrain</button>
+    <button onclick="assignFieldsToTeams(event)">Attribution des terrains</button>
 
     <h3>Liste des terrains</h3>
     <table>

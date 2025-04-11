@@ -277,6 +277,64 @@ router.put('/api/terrains/:id', async (req, res) => {
     }
 });
 
+///// Changes
+router.post('/api/assign-fields', async (req, res) => {
+    const { teamPairs } = req.body; // Each item: { equipe1Id, equipe2Id }
+  
+    try {
+      const availableTerrainsResult = await pool.query(
+        'SELECT id FROM terrains WHERE disponible = TRUE LIMIT $1',
+        [teamPairs.length]
+      );
+      const availableTerrains = availableTerrainsResult.rows;
+  
+      if (availableTerrains.length < teamPairs.length) {
+        return res.status(400).json({ error: 'Not enough available terrains' });
+      }
+  
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+  
+        for (let i = 0; i < teamPairs.length; i++) {
+          const { equipe1Id, equipe2Id } = teamPairs[i];
+          const terrainId = availableTerrains[i].id;
+  
+          // Insert match
+          await client.query(
+            'INSERT INTO match_equipes (equipe1, equipe2, terrain_id) VALUES ($1, $2, $3)',
+            [equipe1Id, equipe2Id, terrainId]
+          );
+  
+          // Set terrain as unavailable
+          await client.query(
+            'UPDATE terrains SET disponible = FALSE WHERE id = $1',
+            [terrainId]
+          );
+        }
+  
+        await client.query('COMMIT');
+        res.json({ message: 'Fields assigned and matches recorded successfully.' });
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
+  
+    } catch (error) {
+      console.error('Error assigning fields:', error);
+      res.status(500).json({ error: 'Erreur lors de l\'attribution des terrains.' });
+    }
+  });
+  
+
+
+
+/// End of changes
+
+
+
 // FONCTIONS
 
 function calculerAge(dateNaissance) {
