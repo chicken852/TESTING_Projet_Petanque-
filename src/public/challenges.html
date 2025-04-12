@@ -62,8 +62,8 @@
         
                         // Add match data
                         row.appendChild(td(`Match ${match.match_id}`));
-                        row.appendChild(td(`Team 1 (${match.equipe1_type}) - ${match.equipe1_score}`));  // Show team 1 and their score
-                        row.appendChild(td(`Team 2 (${match.equipe2_type}) - ${match.equipe2_score}`));  // Show team 2 and their score
+                        row.appendChild(td(`${match.equipe1_name} (${match.equipe1_type}) - ${match.equipe1_score}`));  // Show team 1 name and score
+                        row.appendChild(td(`${match.equipe2_name} (${match.equipe2_type}) - ${match.equipe2_score}`));  // Show team 2 name and score
                         row.appendChild(td(`Field ${match.terrain_id} - ${match.terrain_type}`));
         
                         // Add a button to open the score form
@@ -74,6 +74,14 @@
                         tdButton.appendChild(scoreButton);
                         row.appendChild(tdButton);
         
+                        // Add a delete button to delete the match and its teams
+                        const deleteButton = document.createElement('button');
+                        deleteButton.textContent = 'Delete Match';
+                        deleteButton.onclick = () => deleteMatch(match.match_id, match.equipe1_id, match.equipe2_id);
+                        const tdDelete = document.createElement('td');
+                        tdDelete.appendChild(deleteButton);
+                        row.appendChild(tdDelete);
+        
                         // Append to the table body
                         tableBody.appendChild(row);
                     });
@@ -82,6 +90,24 @@
                 }
             } catch (error) {
                 console.error('Error:', error);
+            }
+        }
+        
+        async function deleteMatch(matchId, equipe1Id, equipe2Id) {
+            try {
+                // Send the delete request to the server to delete the match and its teams
+                const response = await fetch(`/api/delete-match/${matchId}/${equipe1Id}/${equipe2Id}`, {
+                    method: 'DELETE',
+                });
+        
+                if (response.ok) {
+                    alert('Match and associated teams deleted successfully');
+                    displayCurrentMatches(); // Refresh the matches table
+                } else {
+                    alert('Error deleting match');
+                }
+            } catch (error) {
+                console.error('Error deleting match:', error);
             }
         }
 

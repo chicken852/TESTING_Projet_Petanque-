@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Results of the Challenge</title>
+</head>
+<body>
+  <button onclick="window.location.href='/'">Back to Home</button>
+  <button onclick="downloadCSV()">Download as CSV</button>
+  <h1>Results of the Challenge</h1>
+
+  <table border="1">
+    <thead>
+      <tr>
+        <th>Order</th>
+        <th>Id Number</th>
+        <th>Full Name</th>
+        <th>Category</th>
+        <th>Number of Challenges Played</th>
+        <th>Retenus</th>
+        <th>Points</th>
+        <th>General Position</th>
+        <th>S</th>
+        <th>F</th>
+        <th>J</th>
+        <th>V</th>
+        <th>G</th>
+        <th>P</th>
+        <th>%G</th>
+      </tr>
+    </thead>
+    <tbody id="results-table-body">
+      <!-- Results will be filled here -->
+    </tbody>
+  </table>
+
+  <script>
+    async function loadResults() {
+      const response = await fetch('/api/results');
+      const data = await response.json();
+      const tbody = document.getElementById('results-table-body');
+      tbody.innerHTML = '';
+
+      data.forEach(row => {
+        const tr = document.createElement('tr');
+        Object.values(row).forEach(value => {
+          const td = document.createElement('td');
+          td.textContent = value !== null ? value : '';
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    let currentData = []; // store data for export
+  
+    async function loadResults() {
+      const response = await fetch('/api/results');
+      const data = await response.json();
+      currentData = data; // store it globally
+      const tbody = document.getElementById('results-table-body');
+      tbody.innerHTML = '';
+  
+      data.forEach(row => {
+        const tr = document.createElement('tr');
+        Object.values(row).forEach(value => {
+          const td = document.createElement('td');
+          td.textContent = value !== null ? value : '';
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    }
+  
+    function downloadCSV() {
+      if (!currentData.length) return;
+  
+      const headers = Object.keys(currentData[0]);
+      const csvRows = [
+        headers.join(','), // header row
+        ...currentData.map(row =>
+          headers.map(header => `"${(row[header] ?? '').toString().replace(/"/g, '""')}"`).join(',')
+        )
+      ];
+  
+      const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'challenge_results.csv';
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    window.onload = loadResults;
+  </script>
+</body>
+</html>

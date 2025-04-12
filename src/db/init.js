@@ -44,6 +44,12 @@ const createTables = async () => {
         terrain_id INTEGER REFERENCES terrains(Id)
     );
 
+    ALTER TABLE membres_equipes
+    DROP CONSTRAINT membres_equipes_equipe_id_fkey,
+    ADD CONSTRAINT membres_equipes_equipe_id_fkey FOREIGN KEY (equipe_id)
+    REFERENCES equipes (id)
+    ON DELETE CASCADE;
+
   INSERT INTO "membres" ("prenom", "nom", "genre", "age", "date_naissance", "victoires", "defaites", "rang") VALUES
 	('Emma', 'Durand', 'F', 30, '1994-08-21', 0, 0, 'Femme'),
     ('Sophie', 'Lefevre', 'F', 40, '1984-02-10', 0, 0, 'Femme'),

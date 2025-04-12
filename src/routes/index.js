@@ -34,6 +34,10 @@ router.get('/score-team', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'public', 'score-team.html'));  // Serve score-team.html
 });
 
+router.get('/results', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'public', 'results.html'));  // Serve historique.html
+});
+
 // Get last teams from database
 router.get('/api/teams/count', async (req, res) => {
     try {
@@ -45,6 +49,116 @@ router.get('/api/teams/count', async (req, res) => {
       res.status(500).json({ error: 'Error fetching team count' });
     }
   });
+
+router.get('/api/results', async (req, res) => {
+    try {
+        const query = `
+        WITH player_wins AS (
+    SELECT 
+        m.Id AS player_id,
+        m.nom,
+        m.prenom,
+        m.age,
+        m.genre,
+        e.score,
+        ROW_NUMBER() OVER (PARTITION BY m.Id ORDER BY e.score DESC) AS win_rank
+    FROM Membres m
+    JOIN Membres_Equipes me ON m.Id IN (me.membre1, me.membre2, me.membre3)
+    JOIN Equipes e ON me.equipe_id = e.Id
+    WHERE e.score >= 100
+            ),
+            player_losses AS (
+                SELECT 
+                    m.Id AS player_id,
+                    e.score
+                FROM Membres m
+                JOIN Membres_Equipes me ON m.Id IN (me.membre1, me.membre2, me.membre3)
+                JOIN Equipes e ON me.equipe_id = e.Id
+                WHERE e.score < 100
+            ),
+            retenus AS (
+                SELECT 
+                    player_id,
+                    SUM(score) AS total_points
+                FROM player_wins
+                WHERE win_rank <= 20
+                GROUP BY player_id
+            ),
+            team_count AS (
+                SELECT 
+                    m.Id AS player_id,
+                    COUNT(DISTINCT me.equipe_id) AS challenges_played
+                FROM Membres m
+                JOIN Membres_Equipes me ON m.Id IN (me.membre1, me.membre2, me.membre3)
+                GROUP BY m.Id
+            ),
+            base AS (
+                SELECT 
+                    m.Id AS player_id,
+                    m.nom,
+                    m.prenom,
+                    m.age,
+                    m.genre,
+                    CASE
+                        WHEN m.genre = 'F' THEN 'Femme'
+                        WHEN m.age >= 50 THEN 'Veteran'
+                        WHEN m.age >= 18 THEN 'Senior'
+                        ELSE 'Junior'
+                    END AS category,
+                    COALESCE(t.challenges_played, 0) AS challenges_played,
+                    COALESCE(r.total_points, 0) AS points
+                FROM Membres m
+                LEFT JOIN retenus r ON r.player_id = m.Id
+                LEFT JOIN team_count t ON t.player_id = m.Id
+            ),
+            ranked AS (
+                SELECT 
+                    b.*,
+                    RANK() OVER (ORDER BY points DESC) AS general_rank,
+                    CASE WHEN b.category = 'Senior' THEN RANK() OVER (PARTITION BY category ORDER BY points DESC) END AS S,
+                    CASE WHEN b.category = 'Femme' THEN RANK() OVER (PARTITION BY category ORDER BY points DESC) END AS F,
+                    CASE WHEN b.category = 'Junior' THEN RANK() OVER (PARTITION BY category ORDER BY points DESC) END AS J,
+                    CASE WHEN b.category = 'Veteran' THEN RANK() OVER (PARTITION BY category ORDER BY points DESC) END AS V
+                FROM base b
+            ),
+            game_stats AS (
+                SELECT 
+                    m.Id AS player_id,
+                    COUNT(DISTINCT CASE WHEN e.score >= 100 THEN e.Id END) AS G,  -- Games won
+                    COUNT(DISTINCT CASE WHEN e.score < 100 THEN e.Id END) AS P   -- Games lost
+                FROM Membres m
+                JOIN Membres_Equipes me ON m.Id IN (me.membre1, me.membre2, me.membre3)
+                JOIN Equipes e ON me.equipe_id = e.Id
+                GROUP BY m.Id
+            )
+
+            SELECT 
+                ROW_NUMBER() OVER (ORDER BY r.points DESC) AS "Order",
+                r.player_id AS "Id Number",
+                UPPER(r.nom) || ' ' || INITCAP(r.prenom) AS "Full Name",
+                r.category AS "Category",
+                r.challenges_played AS "Number of Challenges Played",
+                LEAST(r.challenges_played, 20) AS "Retenus",
+                r.points AS "Points",
+                r.general_rank AS "General Position",
+                r.S, r.F, r.J, r.V,
+                gs.G,
+                gs.P,
+                ROUND(CASE 
+                    WHEN (gs.G + gs.P) > 0 THEN (gs.G * 100.0 / (gs.G + gs.P))  -- Percentage of games won
+                    ELSE 0
+                END, 2) AS "%G"
+            FROM ranked r
+            LEFT JOIN game_stats gs ON gs.player_id = r.player_id
+            ORDER BY "Order"`;
+
+        const { rows } = await pool.query(query);
+        res.json(rows);
+    } catch (error) {
+        console.error('Error fetching results:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
 
 router.post('/api/teams/:id/score', async (req, res) => {
     const { id } = req.params;  // Get team ID from URL params
@@ -73,6 +187,10 @@ router.get('/api/current-matches', async (req, res) => {
         const query = `
             SELECT 
                 me.match_id, 
+                e1.Id AS equipe1_id, 
+                e2.Id AS equipe2_id,
+                'Team ' || e1.Id AS equipe1_name,  -- Concatenate 'Team ' with team ID
+                'Team ' || e2.Id AS equipe2_name,  -- Concatenate 'Team ' with team ID
                 e1.type AS equipe1_type, 
                 e2.type AS equipe2_type, 
                 e1.score AS equipe1_score, 
@@ -85,10 +203,34 @@ router.get('/api/current-matches', async (req, res) => {
             JOIN terrains t ON t.Id = me.terrain_id;
         `;
         const result = await pool.query(query);
-        res.json(result.rows);  // Send the result with team scores and terrain information
+        res.json(result.rows);  // Send the result with team names, scores, and terrain information
     } catch (error) {
         console.error('Error fetching current matches:', error);
         res.status(500).json({ error: 'Error fetching matches' });
+    }
+});
+
+router.delete('/api/delete-match/:matchId/:equipe1Id/:equipe2Id', async (req, res) => {
+    const { matchId, equipe1Id, equipe2Id } = req.params;
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');  // Start a transaction
+
+        // Delete from match_equipes table (delete the match)
+        await client.query('DELETE FROM match_equipes WHERE match_id = $1', [matchId]);
+
+        // Delete the equipes (teams) associated with the match, cascade to Membres_Equipes table
+        await client.query('DELETE FROM Equipes WHERE Id IN ($1, $2)', [equipe1Id, equipe2Id]);
+
+        await client.query('COMMIT');  // Commit the transaction
+        res.status(200).json({ message: 'Match and associated teams deleted successfully' });
+    } catch (error) {
+        await client.query('ROLLBACK');  // Rollback the transaction in case of an error
+        console.error('Error deleting match and teams:', error);
+        res.status(500).json({ error: 'Error deleting match and associated teams' });
+    } finally {
+        client.release();
     }
 });
 

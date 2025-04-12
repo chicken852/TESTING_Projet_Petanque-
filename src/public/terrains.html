@@ -3,7 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Gestion des Terrains</title>
+    <style>
+        body {
+            background-color: #f9f9f9;
+            color: #333;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h3 {
+            margin: 20px 0;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #555;
+        }
+        button {
+            background-color: #fff;
+            color: #333;
+            border: 1px solid #ddd;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 10px 0;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #f1f1f1;
+            border-color: #bbb;
+        }
+        table {
+            width: 80%;
+            margin: 20px 0;
+            border-collapse: collapse;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+        }
+        th, td {
+            padding: 15px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f4f4f4;
+            color: #555;
+            text-transform: uppercase;
+        }
+        tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        .action-btn {
+            background-color: #f8f8f8;
+            color: #333;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .action-btn:hover {
+            background-color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+
+    <button onclick="window.location.href='/'">Accueil</button>
+
+    <h3>Gestion des Terrains</h3>
+    
+    <table id="terrains-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Type</th>
+                <th>Disponible</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <h3>Terrains Disponibles</h3>
+    <table id="available-fields-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Type</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
     <script>
         async function loadTerrains() {
             const res = await fetch('/api/terrains');
@@ -18,7 +116,7 @@
                     <td>${terrain.id}</td>
                     <td>${terrain.type}</td>
                     <td>${terrain.disponible ? 'Oui' : 'Non'}</td>
-                    <td><button onclick="toggleTerrain(${terrain.id}, ${!terrain.disponible})">
+                    <td><button class="action-btn" onclick="toggleTerrain(${terrain.id}, ${!terrain.disponible})">
                         ${terrain.disponible ? 'Désactiver' : 'Activer'}
                     </button></td>
                 `;
@@ -55,31 +153,5 @@
 
         loadTerrains();
     </script>
-</head>
-<body>
-    <button onclick="window.location.href='/'">Accueil</button>
-    <h3>Gestion des Terrains</h3>
-    <table id="terrains-table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Type</th>
-                <th>Disponible</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-
-    <h3>Terrains Disponibles</h3>
-    <table id="available-fields-table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Type</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
 </body>
 </html>
