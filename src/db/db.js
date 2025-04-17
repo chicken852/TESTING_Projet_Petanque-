@@ -1,12 +1,13 @@
-require('dotenv').config();
+require('dotenv').config();  // Load the .env file
+
 const { Pool } = require('pg');
 
 const pool = new Pool({
-    user: 'postgres',
-    host: 'localhost',
-    database: 'petanque_db',
-    password: 'Aumariflo_15',
-    port: 5432,
+    user: process.env.DB_USER || 'postgres',
+    host: process.env.DB_HOST || 'localhost',
+    database: process.env.DB_NAME || 'petanque_db',
+    password: process.env.DB_PASSWORD || 'Maldek123@',
+    port: process.env.DB_PORT || 5432 // Ensure this is coming from .env
 });
 
 pool.connect()
@@ -14,3 +15,10 @@ pool.connect()
     .catch(err => console.error('Connection error', err.stack));
 
 module.exports = pool;
+
+
+
+
+
+
+
